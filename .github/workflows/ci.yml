@@ -18,7 +18,9 @@ env:
   IMAGE_NAME: ihebchaibi/rag-service
 
 jobs:
-
+  # ==================================================
+  # CI : tests et compilation de l’application
+  # ==================================================
   ci:
     name: Test application
     runs-on: ubuntu-latest
@@ -34,7 +36,7 @@ jobs:
           echo "Ref: ${{ github.ref }}"
           echo "Ref name: ${{ github.ref_name }}"
           echo "Ref type: ${{ github.ref_type }}"
-          echo "Commit SHA: ${{ github.sha }}"
+          echo "Commit: ${{ github.sha }}"
 
       - name: Setup Java 21
         uses: actions/setup-java@v4
@@ -52,8 +54,26 @@ jobs:
       - name: Build application
         run: ./mvnw package -DskipTests
 
+      - name: Display generated files
+        run: ls -lah target
+
+      # Le JAR est transféré au job Docker.
+      # Cette étape est nécessaire, car chaque job utilise une machine différente.
+      - name: Upload application JAR
+        if: github.ref_type == 'tag'
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-jar
+          path: target/*.jar
+          if-no-files-found: error
+          retention-days: 1
+
+  # ==================================================
+  # Docker : uniquement pour un tag Git vX.Y.Z
+  # ==================================================
   docker:
     name: Publish Docker image
+
     needs:
       - ci
 
@@ -66,6 +86,16 @@ jobs:
     steps:
       - name: Checkout source code
         uses: actions/checkout@v4
+
+      # Télécharge le JAR produit dans le job CI.
+      - name: Download application JAR
+        uses: actions/download-artifact@v4
+        with:
+          name: application-jar
+          path: target
+
+      - name: Display downloaded JAR
+        run: ls -lah target
 
       - name: Extract and validate version
         id: version
@@ -91,7 +121,7 @@ jobs:
           SHORT_SHA="${GITHUB_SHA::7}"
 
           echo "value=${SHORT_SHA}" >> "$GITHUB_OUTPUT"
-          echo "Short commit SHA: ${SHORT_SHA}"
+          echo "Short SHA: ${SHORT_SHA}"
 
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -102,18 +132,18 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Verify Docker version does not already exist
+      - name: Verify version does not already exist
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.value }}
         run: |
           IMAGE="${IMAGE_NAME}:${VERSION}"
 
-          echo "Checking image: ${IMAGE}"
+          echo "Checking Docker image: ${IMAGE}"
 
           if docker manifest inspect "${IMAGE}" > /dev/null 2>&1; then
             echo "Docker image ${IMAGE} already exists."
-            echo "Create a new version, for example v1.0.3."
+            echo "Create a new version."
             exit 1
           fi
 
@@ -136,7 +166,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Publish workflow summary
+      - name: Publish summary
         shell: bash
         env:
           VERSION: ${{ steps.version.outputs.value }}
@@ -144,5 +174,5 @@ jobs:
         run: |
           echo "## Docker image published" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Version: \`${IMAGE_NAME}:${VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Commit: \`${IMAGE_NAME}:sha-${SHORT_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Image: \`${IMAGE_NAME}:${VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Commit image: \`${IMAGE_NAME}:sha-${SHORT_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
