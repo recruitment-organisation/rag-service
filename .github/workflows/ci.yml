@@ -15,12 +15,10 @@ permissions:
   contents: read
 
 env:
-  IMAGE_NAME: ihebchaibi/rag-service
+  IMAGE_NAME: ihab0/rag-service
 
 jobs:
-  # ==================================================
-  # CI : tests et compilation de l’application
-  # ==================================================
+
   ci:
     name: Test application
     runs-on: ubuntu-latest
@@ -57,8 +55,6 @@ jobs:
       - name: Display generated files
         run: ls -lah target
 
-      # Le JAR est transféré au job Docker.
-      # Cette étape est nécessaire, car chaque job utilise une machine différente.
       - name: Upload application JAR
         if: github.ref_type == 'tag'
         uses: actions/upload-artifact@v4
@@ -68,9 +64,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  # ==================================================
-  # Docker : uniquement pour un tag Git vX.Y.Z
-  # ==================================================
+
   docker:
     name: Publish Docker image
 
