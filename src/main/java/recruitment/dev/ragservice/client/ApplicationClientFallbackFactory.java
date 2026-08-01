@@ -4,6 +4,7 @@ import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
 import recruitment.dev.ragservice.dto.client.ApplicationClientDto;
 import recruitment.dev.ragservice.dto.client.CvClientDto;
+import recruitment.dev.ragservice.dto.client.PageResult;
 import recruitment.dev.ragservice.dto.client.UpdateMatchingScoreRequest;
 
 @Component
@@ -12,6 +13,11 @@ public class ApplicationClientFallbackFactory implements FallbackFactory<Applica
     @Override
     public ApplicationClient create(Throwable cause) {
         return new ApplicationClient() {
+            @Override
+            public PageResult<ApplicationClientDto> getApplications(int page, int size) {
+                throw RagFeignFallbacks.unavailable("application-service", cause);
+            }
+
             @Override
             public ApplicationClientDto getApplicationById(Long applicationId) {
                 throw RagFeignFallbacks.unavailable("application-service", cause);

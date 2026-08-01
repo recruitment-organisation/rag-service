@@ -4,6 +4,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 import recruitment.dev.ragservice.dto.client.ApplicationClientDto;
 import recruitment.dev.ragservice.dto.client.CvClientDto;
+import recruitment.dev.ragservice.dto.client.PageResult;
 import recruitment.dev.ragservice.dto.client.UpdateMatchingScoreRequest;
 
 @FeignClient(
@@ -11,6 +12,12 @@ import recruitment.dev.ragservice.dto.client.UpdateMatchingScoreRequest;
         fallbackFactory = ApplicationClientFallbackFactory.class
 )
 public interface ApplicationClient {
+
+    @GetMapping("/applications/getall")
+    PageResult<ApplicationClientDto> getApplications(
+            @RequestParam("page") int page,
+            @RequestParam("size") int size
+    );
 
     @GetMapping("/internal/applications/{applicationId}")
     ApplicationClientDto getApplicationById(

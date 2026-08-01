@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(ar -> ar
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/rag/hr/**").hasRole("HR")
                         .requestMatchers("/rag/**").permitAll()
                         .requestMatchers("/api/rag/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/info").permitAll()
