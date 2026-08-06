@@ -7,6 +7,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoders;
@@ -24,6 +25,16 @@ public class SecurityConfig {
 
     public SecurityConfig(JwtAuthConverter jwtAuthConverter) {
         this.jwtAuthConverter = jwtAuthConverter;
+    }
+
+    @Bean
+    public WebSecurityCustomizer workflowRagEndpointCustomizer() {
+        return web -> web.ignoring().requestMatchers(request -> {
+            String path = request.getRequestURI();
+            return HttpMethod.POST.matches(request.getMethod())
+                    && path.startsWith("/rag/applications/")
+                    && path.endsWith("/analyze");
+        });
     }
 
     @Bean
