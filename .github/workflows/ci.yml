@@ -1,4 +1,4 @@
-name: RAG Service CI/CD
+name: rag Service CI/CD
 
 on:
   push:
@@ -46,7 +46,6 @@ jobs:
       - name: Make Maven wrapper executable
         run: chmod +x mvnw
 
-
       - name: Build application
         run: ./mvnw package -DskipTests
 
@@ -74,6 +73,9 @@ jobs:
       github.ref_type == 'tag'
 
     runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version.outputs.value }}
 
     steps:
       - name: Checkout source code
@@ -168,3 +170,43 @@ jobs:
           echo "" >> "$GITHUB_STEP_SUMMARY"
           echo "- Image: \`${IMAGE_NAME}:${VERSION}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- Commit image: \`${IMAGE_NAME}:sha-${SHORT_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
+
+
+  update-gitops:
+    name: Update GitOps repository
+    needs:
+      - docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout GitOps repo
+        uses: actions/checkout@v4
+        with:
+          repository: recruitment-organisation/recruitment-gitops
+          token: ${{ secrets.GITOPS_PAT }}
+          path: gitops
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+
+      - name: Update image tag in values file
+        env:
+          VERSION: ${{ needs.docker.outputs.version }}
+        run: |
+          cd gitops
+          yq -i '.image.tag = strenv(VERSION)' values/applications/rag-service.yaml
+          echo "Nouveau contenu :"
+          cat values/applications/rag-service.yaml
+
+      - name: Commit and push
+        env:
+          VERSION: ${{ needs.docker.outputs.version }}
+        run: |
+          cd gitops
+          git rag user.name "github-actions[bot]"
+          git rag user.email "github-actions[bot]@users.noreply.github.com"
+          git add values/applications/rag-service.yaml
+          git commit -m "chore: bump rag-service image to ${VERSION}"
+          git push origin main
