@@ -51,7 +51,7 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8080}/realms/${KEYCLOAK_REALM:micro-service}
-          jwk-set-uri: ${KEYCLOAK_SERVER_URL:http://localhost:8080}/realms/${KEYCLOAK_REALM:micro-service}/protocol/openid-connect/certs
+          jwk-set-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8080}/realms/${KEYCLOAK_REALM:micro-service}/protocol/openid-connect/certs
 
   servlet:
     multipart:
