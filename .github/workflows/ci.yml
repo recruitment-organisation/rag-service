@@ -196,9 +196,9 @@ jobs:
           VERSION: ${{ needs.docker.outputs.version }}
         run: |
           cd gitops
-          yq -i '.image.tag = strenv(VERSION)' values/prod/applications/rag-service.yaml
+          yq -i '.image.tag = strenv(VERSION)' values/local/applications/rag-service.yaml
           echo "Nouveau contenu :"
-          cat values/prod/applications/rag-service.yaml
+          cat values/local/applications/rag-service.yaml
 
       - name: Commit and push
         env:
@@ -207,7 +207,7 @@ jobs:
           cd gitops
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add values/prod/applications/rag-service.yaml
+          git add values/local/applications/rag-service.yaml
           if git diff --cached --quiet; then
             echo "rag-service is already using ${VERSION}"
             exit 0
